@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Monitor</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .notification-enter {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .notification-enter-active {
+            opacity: 1;
+            transform: translateX(0%);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .notification-exit {
+            opacity: 1;
+        }
+        .notification-exit-active {
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .pulse-ring {
+            content: '';
+            position: absolute;
+            border: 2px solid #10b981;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.33);
+            }
+            80%, 100% {
+                opacity: 0;
+                transform: scale(1.2);
+            }
+        }
+        .monitor-card {
+            transition: all 0.3s ease;
+        }
+        .monitor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Notification Component
+        function Notification({ notification, onClose }) {
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    onClose(notification.id);
+                }, 5000);
+                return () => clearTimeout(timer);
+            }, [notification.id, onClose]);
+
+            const getIcon = () => {
+                switch (notification.type) {
+                    case 'success': return 'fa-check-circle text-green-500';
+                    case 'error': return 'fa-exclamation-circle text-red-500';
+                    case 'warning': return 'fa-exclamation-triangle text-yellow-500';
+                    case 'job': return 'fa-briefcase text-blue-500';
+                    default: return 'fa-info-circle text-blue-500';
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-4 mb-3 border-l-4 border-blue-500 max-w-sm">
+                    <div className="flex items-start">
+                        <i className={`fas ${getIcon()} mr-3 mt-1`}></i>
+                        <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{notification.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                            {notification.job && (
+                                <div className="mt-2 p-2 bg-gray-50 rounded">
+                                    <p className="font-medium text-sm">{notification.job.title}</p>
+                                    <p className="text-xs text-gray-500">{notification.job.company} • {notification.job.location}</p>
+                                </div>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => onClose(notification.id)}
+                            className="ml-4 text-gray-400 hover:text-gray-600"
+                        >
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Monitor Card Component
+        function MonitorCard({ monitor, onToggle, onEdit, onDelete, onTest }) {
+            const [isRunning, setIsRunning] = useState(monitor.is_active);
+            const [lastUpdate, setLastUpdate] = useState(null);
+            
+            useEffect(() => {
+                setIsRunning(monitor.is_active);
+            }, [monitor.is_active]);
+
+            return (
+                <div className="monitor-card bg-white rounded-lg shadow-md p-6 border">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                            <div className="relative">
+                                <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                {isRunning && <div className="pulse-ring"></div>}
+                            </div>
+                            <h3 className="ml-3 text-lg font-semibold text-gray-900">{monitor.name}</h3>
+                        </div>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => onTest(monitor.id)}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Test Monitor"
+                            >
+                                <i className="fas fa-play-circle"></i>
+                            </button>
+                            <button
+                                onClick={() => onEdit(monitor)}
+                                className="text-gray-600 hover:text-gray-800"
+                                title="Edit Monitor"
+                            >
+                                <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                                onClick={() => onDelete(monitor.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete Monitor"
+                            >
+                                <i className="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-2">
+                            <i className="fas fa-link mr-2"></i>
+                            <span className="break-all">{monitor.url}</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                            {monitor.keywords.map((keyword, index) => (
+                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    {keyword}
+                                </span>
+                            ))}
+                        </div>
+                        <p className="text-sm text-gray-500">
+                            <i className="fas fa-clock mr-2"></i>
+                            Checks every {monitor.check_interval} seconds
+                        </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                        <button
+                            onClick={() => onToggle(monitor.id)}
+                            className={`px-4 py-2 rounded text-sm font-medium ${
+                                isRunning 
+                                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                                    : 'bg-green-500 hover:bg-green-600 text-white'
+                            }`}
+                        >
+                            {isRunning ? 'Stop' : 'Start'}
+                        </button>
+                        
+                        {lastUpdate && (
+                            <div className="text-xs text-gray-500">
+                                Last update: {new Date(lastUpdate).toLocaleTimeString()}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const [monitors, setMonitors] = useState([]);
+            const [jobs, setJobs] = useState([]);
+            const [notifications, setNotifications] = useState([]);
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [editingMonitor, setEditingMonitor] = useState(null);
+            const [stats, setStats] = useState({});
+            const [isConnected, setIsConnected] = useState(false);
+            const socketRef = useRef(null);
+            const audioRef = useRef(null);
+
+            // Initialize socket connection
+            useEffect(() => {
+                socketRef.current = io();
+                
+                socketRef.current.on('connect', () => {
+                    setIsConnected(true);
+                    addNotification('success', 'Connected', 'Connected to job monitor server');
+                });
+
+                socketRef.current.on('disconnect', () => {
+                    setIsConnected(false);
+                    addNotification('error', 'Disconnected', 'Lost connection to server');
+                });
+
+                socketRef.current.on('new_job', (data) => {
+                    playNotificationSound();
+                    addNotification('job', 'New Job Found!', `Found matching job for ${data.monitor_name}`, data.job);
+                    loadJobs();
+                });
+
+                socketRef.current.on('monitor_update', (data) => {
+                    if (data.new_jobs > 0) {
+                        addNotification('success', 'Monitor Update', `${data.new_jobs} new jobs found`);
+                    }
+                });
+
+                socketRef.current.on('monitor_error', (data) => {
+                    addNotification('error', 'Monitor Error', data.error);
+                });
+
+                return () => {
+                    if (socketRef.current) {
+                        socketRef.current.disconnect();
+                    }
+                };
+            }, []);
+
+            // Load initial data
+            useEffect(() => {
+                loadMonitors();
+                loadJobs();
+                loadStats();
+            }, []);
+
+            const playNotificationSound = () => {
+                try {
+                    // Create audio context and play notification sound
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } catch (error) {
+                    console.log('Audio playback failed:', error);
+                }
+            };
+
+            const addNotification = (type, title, message, job = null) => {
+                const notification = {
+                    id: Date.now(),
+                    type,
+                    title,
+                    message,
+                    job,
+                    timestamp: new Date()
+                };
+                setNotifications(prev => [notification, ...prev.slice(0, 4)]);
+            };
+
+            const removeNotification = (id) => {
+                setNotifications(prev => prev.filter(n => n.id !== id));
+            };
+
+            const loadMonitors = async () => {
+                try {
+                    const response = await fetch('/api/monitors');
+                    const data = await response.json();
+                    if (data.success) {
+                        setMonitors(data.data);
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to load monitors');
+                }
+            };
+
+            const loadJobs = async () => {
+                try {
+                    const response = await fetch('/api/jobs');
+                    const data = await response.json();
+                    if (data.success) {
+                        setJobs(data.data);
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to load jobs');
+                }
+            };
+
+            const loadStats = async () => {
+                try {
+                    const response = await fetch('/api/stats');
+                    const data = await response.json();
+                    if (data.success) {
+                        setStats(data.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to load stats');
+                }
+            };
+
+            const handleToggleMonitor = async (monitorId) => {
+                try {
+                    const response = await fetch(`/api/monitors/${monitorId}/toggle`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        loadMonitors();
+                        addNotification('success', 'Monitor Updated', 
+                            data.is_active ? 'Monitor started' : 'Monitor stopped');
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to toggle monitor');
+                }
+            };
+
+            const handleTestMonitor = async (monitorId) => {
+                try {
+                    addNotification('info', 'Testing Monitor', 'Running test scrape...');
+                    const response = await fetch(`/api/monitors/${monitorId}/test`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        addNotification('success', 'Test Complete', 
+                            `Found ${data.data.jobs_found} jobs in ${data.data.scrape_time}s`);
+                    } else {
+                        addNotification('error', 'Test Failed', data.error);
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to test monitor');
+                }
+            };
+
+            const handleDeleteMonitor = async (monitorId) => {
+                if (!confirm('Are you sure you want to delete this monitor?')) return;
+                
+                try {
+                    const response = await fetch(`/api/monitors/${monitorId}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        loadMonitors();
+                        addNotification('success', 'Monitor Deleted', 'Monitor has been removed');
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to delete monitor');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100">
+                    {/* Header */}
+                    <header className="bg-white shadow-sm border-b">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-4">
+                                <div className="flex items-center">
+                                    <i className="fas fa-search-plus text-2xl text-blue-600 mr-3"></i>
+                                    <h1 className="text-2xl font-bold text-gray-900">Job Monitor</h1>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center">
+                                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                                        <span className="text-sm text-gray-600">
+                                            {isConnected ? 'Connected' : 'Disconnected'}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowAddModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                    >
+                                        <i className="fas fa-plus mr-2"></i>
+                                        Add Monitor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                        <i className="fas fa-eye text-blue-600"></i>
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm text-gray-600">Active Monitors</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {stats.active_monitors || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center">
+                                    <div className="p-2 bg-green-100 rounded-lg">
+                                        <i className="fas fa-briefcase text-green-600"></i>
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm text-gray-600">Total Jobs</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {stats.total_jobs || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center">
+                                    <div className="p-2 bg-yellow-100 rounded-lg">
+                                        <i className="fas fa-calendar-day text-yellow-600"></i>
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm text-gray-600">Jobs Today</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {stats.jobs_today || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center">
+                                    <div className="p-2 bg-purple-100 rounded-lg">
+                                        <i className="fas fa-chart-line text-purple-600"></i>
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm text-gray-600">Total Monitors</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {stats.total_monitors || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Monitors Grid */}
+                        <div className="mb-8">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Active Monitors</h2>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {monitors.map(monitor => (
+                                    <MonitorCard
+                                        key={monitor.id}
+                                        monitor={monitor}
+                                        onToggle={handleToggleMonitor}
+                                        onEdit={setEditingMonitor}
+                                        onDelete={handleDeleteMonitor}
+                                        onTest={handleTestMonitor}
+                                    />
+                                ))}
+                                {monitors.length === 0 && (
+                                    <div className="col-span-full text-center py-12">
+                                        <i className="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">No monitors yet</h3>
+                                        <p className="text-gray-600 mb-4">Create your first job monitor to get started</p>
+                                        <button 
+                                            onClick={() => setShowAddModal(true)}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                                        >
+                                            Create Monitor
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Recent Jobs */}
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Jobs</h2>
+                            <div className="bg-white rounded-lg shadow overflow-hidden">
+                                <div className="max-h-96 overflow-y-auto">
+                                    {jobs.length > 0 ? (
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50 sticky top-0">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Found</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {jobs.map(job => (
+                                                    <tr key={job.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm font-medium text-gray-900">{job.title}</div>
+                                                            <div className="text-xs text-gray-500">{job.monitor_name}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.company}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.location}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {new Date(job.detected_at).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                            {job.url && (
+                                                                <a 
+                                                                    href={job.url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-blue-600 hover:text-blue-900"
+                                                                >
+                                                                    View Job
+                                                                </a>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <i className="fas fa-briefcase text-gray-400 text-4xl mb-4"></i>
+                                            <p className="text-gray-600">No jobs found yet</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Notifications */}
+                    <div className="fixed top-4 right-4 z-50 space-y-2">
+                        {notifications.map(notification => (
+                            <Notification
+                                key={notification.id}
+                                notification={notification}
+                                onClose={removeNotification}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Add/Edit Monitor Modal */}
+                    {(showAddModal || editingMonitor) && (
+                        <MonitorModal
+                            monitor={editingMonitor}
+                            onClose={() => {
+                                setShowAddModal(false);
+                                setEditingMonitor(null);
+                            }}
+                            onSave={() => {
+                                loadMonitors();
+                                setShowAddModal(false);
+                                setEditingMonitor(null);
+                            }}
+                            addNotification={addNotification}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // Monitor Modal Component
+        function MonitorModal({ monitor, onClose, onSave, addNotification }) {
+            const [formData, setFormData] = useState({
+                name: monitor?.name || '',
+                url: monitor?.url || '',
+                keywords: monitor?.keywords?.join(', ') || '',
+                check_interval: monitor?.check_interval || 10,
+                selector: monitor?.selector || '',
+                is_active: monitor?.is_active !== false
+            });
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const payload = {
+                        ...formData,
+                        keywords: formData.keywords.split(',').map(k => k.trim()).filter(k => k)
+                    };
+
+                    const url = monitor ? `/api/monitors/${monitor.id}` : '/api/monitors';
+                    const method = monitor ? 'PUT' : 'POST';
+                    
+                    const response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        addNotification('success', 'Success', 
+                            monitor ? 'Monitor updated successfully' : 'Monitor created successfully');
+                        onSave();
+                    } else {
+                        addNotification('error', 'Error', data.error || 'Failed to save monitor');
+                    }
+                } catch (error) {
+                    addNotification('error', 'Error', 'Failed to save monitor');
+                }
+            };
+
+            const presetConfigs = {
+                google_careers: {
+                    name: 'Google Careers - Software Engineering Internships',
+                    url: 'https://www.google.com/about/careers/applications/jobs/results/?jlo=en_US&q=Software+Engineer&target_level=INTERN_AND_APPRENTICE',
+                    keywords: 'intern, internship, software engineer, new grad',
+                    selector: ''
+                }
+            };
+
+            const loadPreset = (presetKey) => {
+                const preset = presetConfigs[presetKey];
+                setFormData({
+                    ...formData,
+                    ...preset
+                });
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {monitor ? 'Edit Monitor' : 'Add New Monitor'}
+                            </h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        {!monitor && (
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Quick Setup</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => loadPreset('google_careers')}
+                                        className="text-left p-3 border rounded-lg hover:bg-gray-50"
+                                    >
+                                        <div className="font-medium">Google Careers - Software Engineering Internships</div>
+                                        <div className="text-sm text-gray-500">Monitor Google's intern & new grad positions</div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Monitor Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="e.g., Google Software Engineering Internships"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    URL to Monitor *
+                                </label>
+                                <input
+                                    type="url"
+                                    required
+                                    value={formData.url}
+                                    onChange={(e) => setFormData({...formData, url: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="https://..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Keywords (comma-separated) *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.keywords}
+                                    onChange={(e) => setFormData({...formData, keywords: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="intern, internship, new grad, software engineer"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Jobs containing any of these keywords will be detected</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Check Interval (seconds)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="5"
+                                        max="3600"
+                                        value={formData.check_interval}
+                                        onChange={(e) => setFormData({...formData, check_interval: parseInt(e.target.value)})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="is_active"
+                                        checked={formData.is_active}
+                                        onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                                        className="mr-2"
+                                    />
+                                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                                        Start monitoring immediately
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Custom CSS Selector (optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.selector}
+                                    onChange={(e) => setFormData({...formData, selector: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="e.g., .job-listing, [data-job-id]"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Advanced: Specify a CSS selector for job listings</p>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    {monitor ? 'Update' : 'Create'} Monitor
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
