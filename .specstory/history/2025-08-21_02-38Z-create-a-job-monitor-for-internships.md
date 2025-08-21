@@ -778,7 +778,362 @@ Reinitialized existing Git repository in /Users/sahilhanda/Desktop/projects/jobm
 
 ---
 
+```bash
+git remote add origin https://github.com/sahilhd/job-monitor.git
+```
 
+```
+sahilhanda@MacBookAir jobmonitor % git remote add origin https://github.com/sahilhd/job-monitor.git
+```
+
+---
+
+```bash
+git add .
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git add .
+sahilhanda@MacBookAir jobmonitor %
+```
+
+---
+
+```bash
+git status
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git status
+On branch master
+nothing to commit, working tree clean
+```
+
+---
+
+Let me check what files we have in the directory:
+
+---
+
+```bash
+ls -la
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % ls -la
+total 392
+drwxr-xr-x  25 sahilhanda  staff    800 Aug 20 23:03 .
+drwxr-xr-x@ 28 sahilhanda  staff    896 Aug 20 22:38 ..
+-rw-r--r--@  1 sahilhanda  staff    110 Aug 20 22:38 .cursorindexingignore
+drwxr-xr-x@ 12 sahilhanda  staff    384 Aug 20 23:06 .git
+-rw-r--r--@  1 sahilhanda  staff   1062 Aug 20 23:01 .gitignore
+drwxr-xr-x@  5 sahilhanda  staff    160 Aug 20 22:38 .specstory
+-rw-r--r--@  1 sahilhanda  staff   4382 Aug 20 23:01 DEPLOY-RAILWAY.md
+-rw-r--r--@  1 sahilhanda  staff   1238 Aug 20 23:01 Dockerfile
+-rw-r--r--@  1 sahilhanda  staff   1775 Aug 20 22:53 QUICKSTART.md
+-rw-r--r--@  1 sahilhanda  staff   7052 Aug 20 22:53 README.md
+drwxr-xr-x@  4 sahilhanda  staff    128 Aug 20 22:59 __pycache__
+-rw-r--r--@  1 sahilhanda  staff   5536 Aug 20 22:53 app.py
+-rw-r--r--@  1 sahilhanda  staff  10809 Aug 20 22:53 database.py
+-rw-r--r--@  1 sahilhanda  staff  24576 Aug 20 22:59 job_monitor.db
+-rw-r--r--@  1 sahilhanda  staff  17201 Aug 20 22:53 job_monitor.py
+drwxr-xr-x@  4 sahilhanda  staff    128 Aug 20 22:44 parsers
+-rw-r--r--@  1 sahilhanda  staff   3309 Aug 20 23:01 railway-deploy.md
+-rw-r--r--@  1 sahilhanda  staff    286 Aug 20 23:01 railway.json
+-rw-r--r--@  1 sahilhanda  staff  37211 Aug 20 23:01 railway_app.py
+-rw-r--r--@  1 sahilhanda  staff    294 Aug 20 22:53 requirements.txt
+-rw-r--r--@  1 sahilhanda  staff   6678 Aug 20 22:53 scraper_utils.py
+-rwxr-xr-x@  1 sahilhanda  staff  28291 Aug 20 22:53 simple_app.py
+-rwxr-xr-x@  1 sahilhanda  staff   5833 Aug 20 22:53 start.py
+drwxr-xr-x@  3 sahilhanda  staff     96 Aug 20 22:46 templates
+-rw-r--r--@  1 sahilhanda  staff   3574 Aug 20 23:01 test-railway.py
+sahilhanda@MacBookAir jobmonitor %
+```
+
+---
+
+I see the issue - there's already a git repository with commits. Let me check the commit history and add the new files:
+
+---
+
+```bash
+git log --oneline
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git log --oneline
+7d43726 (HEAD -> master) Railway deployment ready
+```
+
+---
+
+Great! I can see there's already a commit. Let me check if we need to add any new files and then push to your GitHub repository:
+
+---
+
+```bash
+git add . && git status
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git add . && git status
+On branch master
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   .specstory/history/2025-08-21_02-38Z-create-a-job-monitor-for-internships.md
+
+sahilhanda@MacBookAir jobmonitor %
+```
+
+---
+
+Let me commit this change and push to your GitHub repository:
+
+---
+
+```bash
+git commit -m "Update project history and finalize Railway deployment"
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git commit -m "Update project history and finalize Railway deployment"
+[master b85e226] Update project history and finalize Railway deployment
+ 1 file changed, 31 insertions(+)
+```
+
+---
+
+```bash
+git branch -M main
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git branch -M main
+sahilhanda@MacBookAir jobmonitor %
+```
+
+---
+
+Now let me push the code to your GitHub repository:
+
+---
+
+```bash
+git push -u origin main
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git push -u origin main
+Enumerating objects: 33, done.
+Counting objects: 100% (33/33), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (30/30), done.
+Writing objects: 100% (33/33), 50.55 KiB | 8.42 MiB/s, done.
+Total 33 (delta 5), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (5/5), done.
+To https://github.com/sahilhd/job-monitor.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.
+```
+
+---
+
+Perfect! 🎉 Your job monitor code has been successfully pushed to GitHub at https://github.com/sahilhd/job-monitor.
+
+Now let me verify the push worked by checking the repository status:
+
+---
+
+```bash
+git log --oneline -3
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git log --oneline -3
+b85e226 (HEAD -> main, origin/main) Update project history and finalize Railway deployment
+7d43726 Railway deployment ready
+```
+
+---
+
+## Todo List
+
+- [x] Push code to GitHub repository
+- [-] Deploy to Railway platform
+
+---
+
+## 🎉 Successfully Pushed to GitHub!
+
+Your job monitor is now live at: **https://github.com/sahilhd/job-monitor**
+
+### 📁 What's in Your Repository
+
+The complete job monitoring platform with:
+
+- ✅ **Backend API** (`app.py`, `railway_app.py`)
+- ✅ **Database Layer** (`database.py`)
+- ✅ **Web Scraping Engine** (`job_monitor.py`, `scraper_utils.py`)
+- ✅ **Google Careers Parser** (`parsers/google_careers_parser.py`)
+- ✅ **Beautiful Frontend** (`templates/index.html`, `railway_app.py`)
+- ✅ **Railway Deployment** (`Dockerfile`, `railway.json`)
+- ✅ **Documentation** (`README.md`, `DEPLOY-RAILWAY.md`)
+
+## 🚀 Next Step: Deploy to Railway
+
+Now you can deploy this to Railway in just a few clicks:
+
+### Option 1: One-Click Deploy (Recommended)
+
+1. **Go to:** https://railway.app
+2. **Sign up/Login** with GitHub
+3. **Click "New Project"**
+4. **Select "Deploy from GitHub repo"**
+5. **Choose `sahilhd/job-monitor`**
+6. **Click "Deploy"**
+
+Railway will automatically detect your `Dockerfile` and deploy!
+
+### Option 2: Railway CLI
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and deploy
+railway login
+railway init
+railway up
+```
+
+## 🎯 What Happens Next
+
+Once deployed to Railway:
+
+1. **Automatic Build** - Railway builds your Docker container
+2. **Public URL** - You get a URL like `https://job-monitor-production.railway.app`
+3. **24/7 Uptime** - Your app runs continuously in the cloud
+4. **Real-time Monitoring** - Start tracking jobs immediately!
+
+## 🎮 Test Your Deployment
+
+Once Railway gives you a URL:
+
+1. **Open the URL** in your browser
+2. **Click "Google Careers Preset"**
+3. **Click "Create Monitor"**
+4. **Watch for real-time job notifications!** 🔔
+
+Your job monitor will now check Google's internship page every 30 seconds and send you instant notifications when new positions are posted!
+
+Would you like me to help you with the Railway deployment process, or do you want to try it yourself first?
+
+---
+
+_**User**_
+
+process "/bin/sh -c wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && echo \"deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main\" >> /etc/apt/sources.list.d/google-chrome.list && apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 127
+
+build failed 
+
+---
+
+_**Assistant**_
+
+I see the Railway build is failing because of the Chrome installation step in the Dockerfile. The error code 127 means "command not found", which suggests the base image doesn't have `wget` or `apt-key`. Let me fix the Dockerfile to work properly on Railway:
+
+---
+
+<details><summary>Edit file: /Users/sahilhanda/Desktop/projects/jobmonitor/Dockerfile</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -5,5 +5,5 @@
+  WORKDIR /app
+  
+- # Install system dependencies
++ # Install system dependencies including Chrome
+  RUN apt-get update && apt-get install -y \
+      wget \
+```
+
+**Chunk 2**
+Lines added: 3, lines removed: 5
+
+```diff
+@@ -12,9 +12,7 @@
+      curl \
+      xvfb \
+-     && rm -rf /var/lib/apt/lists/*
+- 
+- # Install Google Chrome
+- RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+-     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
++     ca-certificates \
++     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
++     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+      && apt-get update \
+      && apt-get install -y google-chrome-stable \
+```
+
+</details>
+
+---
+
+Actually, let me create a simpler Dockerfile that doesn't require Chrome for Railway, since the selenium dependencies might be causing issues. Let me create a Railway-optimized version:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me update the railway.json to use the simplified Dockerfile:
+
+---
+
+<details><summary>Edit file: /Users/sahilhanda/Desktop/projects/jobmonitor/railway.json</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -3,5 +3,5 @@
+    "build": {
+      "builder": "DOCKERFILE",
+-     "dockerfilePath": "Dockerfile"
++     "dockerfilePath": "Dockerfile.railway"
+    },
+    "deploy": {
+```
+
+</details>
+
+---
+
+Let me also remove the selenium imports from the railway_app.py to make it Railway-compatible:
+
+---
+
+The string to replace was not found in the file.
+
+---
+
+Let me check what imports are actually in the railway_app.py:
+
+---
+
+Read file: undefined
 
 ---
 
