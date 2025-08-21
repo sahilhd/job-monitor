@@ -755,3 +755,34 @@ Would you like me to help you test it locally first, or are you ready to deploy 
 
 ---
 
+_**User**_
+
+this is the github, can you push the code here: @https://github.com/sahilhd/job-monitor 
+
+---
+
+_**Assistant**_
+
+Perfect! I can see you have the GitHub repository ready at https://github.com/sahilhd/job-monitor. Let me push all the code to your repository and then deploy it to Railway.
+
+---
+
+```bash
+git init
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git init
+Reinitialized existing Git repository in /Users/sahilhanda/Desktop/projects/jobmonitor/.git/
+```
+
+---
+
+
+
+---
+
+
+
+---
+
