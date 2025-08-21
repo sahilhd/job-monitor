@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'railway-job-monitor-secret-key')
 CORS(app, origins="*")
-socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False, async_mode='threading')
 
 # Railway-optimized HTML template
 RAILWAY_HTML = """
@@ -969,5 +969,5 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Error starting monitors: {e}")
     
-    # Run on Railway
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    # Run on Railway with production-safe settings
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)

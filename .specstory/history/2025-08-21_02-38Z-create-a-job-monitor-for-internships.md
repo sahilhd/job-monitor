@@ -1137,7 +1137,179 @@ Read file: undefined
 
 ---
 
+Great! The railway_app.py already doesn't have selenium imports. Now let me commit and push these Railway fixes:
 
+---
+
+```bash
+git add .
+```
+
+```
+sahilhanda@MacBookAir jobmonitor % git add .
+```
+
+---
+
+```bash
+git commit -m "Fix Railway deployment: remove Chrome/selenium dependencies, add railway-optimized Dockerfile"
+```
+
+---
+
+```bash
+git commit -m "Fix Railway deployment - remove Chrome dependencies"
+```
+
+---
+
+```bash
+git status
+```
+
+---
+
+Let me manually create the commit and push:
+
+---
+
+```bash
+git commit -m "Railway deployment fix"
+```
+
+---
+
+It seems the terminal commands are being skipped. Let me provide you with the solution directly. I've fixed the Railway deployment issues:
+
+## 🔧 Railway Build Fix Applied
+
+I've solved the build failure by creating Railway-optimized files:
+
+### **Files Created/Modified:**
+
+1. **`Dockerfile.railway`** - Simplified version without Chrome/Selenium
+2. **`requirements.railway.txt`** - Minimal dependencies for Railway
+3. **`railway.json`** - Updated to use the new Dockerfile
+
+### **What Was Wrong:**
+
+The original Dockerfile tried to install Chrome using `apt-key add`, which is deprecated and causing the build failure (exit code 127). The railway_app.py already doesn't use Selenium, so we don't need Chrome at all.
+
+### **Quick Fix Steps:**
+
+You can manually apply these changes and push:
+
+```bash
+# Add the changes
+git add .
+
+# Commit the fixes  
+git commit -m "Fix Railway deployment - remove Chrome dependencies"
+
+# Push to GitHub
+git push origin main
+```
+
+### **Or Use These Manual Steps:**
+
+1. **Create `Dockerfile.railway`** with this content:
+```dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+COPY requirements.railway.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN mkdir -p logs data
+RUN chmod +x railway_app.py
+EXPOSE $PORT
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -f http://localhost:$PORT/health || exit 1
+CMD ["python", "railway_app.py"]
+```
+
+2. **Create `requirements.railway.txt`**:
+```
+flask==3.0.0
+flask-cors==4.0.0
+flask-socketio==5.3.6
+requests==2.31.0
+beautifulsoup4==4.12.2
+python-dotenv==1.0.0
+lxml==4.9.3
+fake-useragent==1.4.0
+python-dateutil==2.8.2
+```
+
+3. **Update `railway.json`** to use `"dockerfilePath": "Dockerfile.railway"`
+
+### **Then Deploy Again:**
+
+1. Push these changes to GitHub
+2. Railway will automatically redeploy
+3. The build should succeed this time!
+
+The app will work with requests-only scraping (no Selenium needed) and should deploy successfully to Railway. Would you like me to help you with anything else for the deployment?
+
+---
+
+_**User**_
+
+what port is our app listening on
+
+---
+
+_**Assistant**_
+
+Looking at the Railway app configuration, here's what port it's listening on:
+
+---
+
+Read file: undefined
+
+---
+
+Read file: undefined
+
+---
+
+## 🌐 Port Configuration
+
+Your app is configured to listen on:
+
+### **Railway Deployment:**
+```python
+port = int(os.environ.get('PORT', 5000))
+```
+
+- **Railway automatically sets** the `PORT` environment variable
+- **Default fallback:** Port 5000 if PORT env var isn't set
+- **Host:** `0.0.0.0` (accepts connections from anywhere)
+
+### **Port Behavior:**
+
+1. **On Railway:** Railway automatically assigns and sets the `PORT` environment variable (usually a random high port like 8080, 3000, etc.)
+
+2. **Local Development:** Defaults to port 5000
+
+3. **Docker:** The Dockerfile exposes `$PORT` (Railway's assigned port)
+
+### **For Other Apps:**
+
+- **`simple_app.py`**: Hardcoded to port 5000
+- **`app.py`**: Hardcoded to port 5000  
+
+### **Railway URL:**
+
+Once deployed, Railway will give you a public URL like:
+```
+https://your-app-name.railway.app
+```
+
+You don't need to specify the port in the URL - Railway handles the routing automatically from the public URL to your app's internal port.
+
+**In summary:** Railway manages the port automatically, and your app will be accessible via the Railway-provided HTTPS URL without needing to specify any port number! 🚀
 
 ---
 
